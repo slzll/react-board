@@ -1,0 +1,40 @@
+body {
+  overflow: hidden;
+}
+
+.board_container {
+  position: relative;
+
+  &--tools {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+
+    .button {
+      transition: all .5s ease;
+
+      & + .button {
+        margin-left: 10px;
+      }
+    }
+
+    &.hidden-tools {
+      .button:not(.tools-control-btn) {
+        transform: translateY(-100%);
+      }
+    }
+  }
+
+  &--canvas {
+    background-color: transparent;
+
+    &.cursor-pen:hover {
+      cursor: url("../../images/pen.png") 0 16, auto;
+    }
+    &.cursor-eraser:hover {
+      cursor: url("../../images/eraser.png") 0 16, auto;
+    }
+  }
+}
+

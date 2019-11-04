@@ -25,6 +25,10 @@ class BoardEraser extends PureComponent {
     })
   }
 
+  undo () {
+    this.props.undo()
+  }
+
   render () {
     const { isShowTools } = this.state
     const { cursor } = this.props
@@ -40,7 +44,7 @@ class BoardEraser extends PureComponent {
           <span className="icon"><FontAwesomeIcon icon={faEraser}/></span>
           <span>擦除</span>
         </button>
-        <button className="button is-small">
+        <button className="button is-small" onClick={() => this.undo()}>
           <span className="icon"><FontAwesomeIcon icon={faUndo}/></span>
           <span>撤销</span>
         </button>

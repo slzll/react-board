@@ -20,12 +20,22 @@ class Board extends PureComponent {
     },
     startDrawLine: false,
     store: [],
+    lastIndex: 0,
     cursor: 'pen'
   }
 
   constructor (props) {
     super(props)
     this.canvas = React.createRef()
+  }
+
+  getContext () {
+    const { current } = this.canvas
+    const ctx = current.getContext('2d')
+    this.setState((prevState) => {
+      const { width, height } = prevState.canvas
+      return { canvas: { ctx, width, height } }
+    })
   }
 
   resize () {
@@ -39,6 +49,21 @@ class Board extends PureComponent {
       const { ctx } = prevState.canvas
       return { canvas: { ctx, width: clientWidth, height: clientHeight } }
     })
+  }
+
+  handleDown (event) {
+    const { ctx } = this.state.canvas
+    const { clientX, clientY } = event
+    this.setState({
+      coordinate: {
+        ...this.state.coordinate,
+        originalX: clientX,
+        originalY: clientY
+      },
+      startDrawLine: true
+    })
+    ctx.beginPath()
+    ctx.moveTo(clientX, clientY)
   }
 
   handleMove (e) {
@@ -61,6 +86,23 @@ class Board extends PureComponent {
     }
   }
 
+  handleUp (event) {
+    const { canvas: { ctx } } = this.state
+    ctx.closePath()
+    const imgData = this.canvas.current.toDataURL()
+    this.setState({
+      coordinate: {
+        ...this.state.coordinate,
+        upX: event.clientX,
+        upY: event.clientY
+      },
+      store: [...this.state.store, imgData],
+      startDrawLine: false
+    })
+
+
+  }
+
   clearBoard () {
     console.log('清空board')
     const { ctx, width, height } = this.state.canvas
@@ -68,45 +110,26 @@ class Board extends PureComponent {
     ctx.clearRect(0, 0, width, height)
   }
 
+  undo () {
+    const { canvas: { ctx }, lastIndex, store } = this.state
+    const { length } = store
+    console.log(store)
+    if (length > 0 && lastIndex < length) {
+      console.log("撤销")
+      const imgData = store[length - lastIndex - 1]
+      this.clearBoard()
+      ctx.drawImage(imgData, 0, 0)
+    }
+  }
+
   componentDidMount () {
-    const { current } = this.canvas
-    const ctx = current.getContext('2d')
-    this.setState((prevState) => {
-      const { width, height } = prevState.canvas
-      return { canvas: { ctx, width, height } }
-    })
+    this.getContext()
     this.resize()
     this.resize = debounce(this.resize)
-    window.addEventListener('resize', this.resize.bind(this), false)
-    this.canvas.current.addEventListener('mousedown', (event) => {
-      const { ctx } = this.state.canvas
-      const { clientX, clientY } = event
-      this.setState({
-        coordinate: {
-          ...this.state.coordinate,
-          originalX: clientX,
-          originalY: clientY
-        },
-        startDrawLine: true
-      })
-      ctx.beginPath()
-      ctx.moveTo(clientX, clientY)
-    })
-    this.canvas.current.addEventListener('mouseup', (event) => {
-      const { ctx } = this.state.canvas
-      this.setState({
-        coordinate: {
-          ...this.state.coordinate,
-          upX: event.clientX,
-          upY: event.clientY
-        },
-        startDrawLine: false
-      })
-      ctx.closePath()
-    })
-    this.canvas.current.addEventListener('mousemove', (e) => {
-      this.handleMove(e)
-    })
+    window.addEventListener('resize', this.resize.bind(this))
+    this.canvas.current.addEventListener('mousedown', this.handleDown.bind(this))
+    this.canvas.current.addEventListener('mouseup', this.handleUp.bind(this))
+    this.canvas.current.addEventListener('mousemove', this.handleMove.bind(this))
   }
 
   componentWillUnmount () {
@@ -117,7 +140,10 @@ class Board extends PureComponent {
     const { cursor } = this.state
     return (
       <div className="board_container">
-        <BoardEraser clearBoard={this.clearBoard.bind(this)} cursor={cursor} parent={this}/>
+        <BoardEraser cursor={cursor}
+                     parent={this}
+                     undo={this.undo.bind(this)}
+                     clearBoard={this.clearBoard.bind(this)}/>
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
       </div>
     )

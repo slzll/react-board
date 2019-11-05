@@ -32,8 +32,13 @@ body {
     &.cursor-pen:hover {
       cursor: url("../../images/pen.png") 0 16, auto;
     }
+
     &.cursor-eraser:hover {
       cursor: url("../../images/eraser.png") 0 16, auto;
+    }
+
+    &.cursor-circle:hover, &.cursor-square:hover {
+      cursor: crosshair;
     }
   }
 }

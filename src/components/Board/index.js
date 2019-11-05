@@ -67,58 +67,125 @@ class Board extends PureComponent {
   }
 
   handleMove (e) {
-    const { clientX, clientY } = e
-    const { canvas: { ctx }, startDrawLine, cursor } = this.state
-    switch (cursor) {
-      case 'pen':
-        if (startDrawLine) {
-          ctx.lineTo(clientX, clientY)
-          ctx.stroke()
-        }
-        break
-      case 'eraser':
-        if (startDrawLine) {
+    const { clientX, clientY, shiftKey } = e
+    const { coordinate: { originalX, originalY }, canvas: { ctx }, startDrawLine, cursor } = this.state
+    if (startDrawLine) {
+      switch (cursor) {
+        case 'pen':
+          if (shiftKey) {
+            let x = Math.abs(clientX - originalX)
+            let y = Math.abs(clientY - originalY)
+            ctx.lineTo(x >= y ? clientX : originalX, x >= y ? originalY : clientY)
+            ctx.stroke()
+          } else {
+            ctx.lineTo(clientX, clientY)
+            ctx.stroke()
+          }
+          break
+        case 'eraser':
           ctx.clearRect(clientX, clientY, 10, 10)
-        }
-        break
-      default:
-        break
+          break
+        default:
+          break
+      }
     }
   }
 
   handleUp (event) {
-    const { canvas: { ctx } } = this.state
-    ctx.closePath()
-    const imgData = this.canvas.current.toDataURL()
+    const { clientX, clientY, shiftKey } = event
+    const { coordinate: { originalX, originalY }, canvas: { ctx }, lastIndex, store, cursor } = this.state
+    const { length } = store
+    let w = 0, h = 0
+    switch (cursor) {
+      case 'square':
+        w = clientX - originalX
+        h = clientY - originalY
+        ctx.beginPath()
+        if (shiftKey) {
+          ctx.strokeRect(originalX, originalY, w, w)
+        } else {
+          ctx.strokeRect(originalX, originalY, w, h)
+        }
+        ctx.stroke()
+        break
+      case 'circle':
+        w = clientX - originalX
+        h = clientY - originalY
+        let x = originalX + w / 2
+        let y = originalY + h / 2
+        let rx = Math.abs(w) / 2
+        let ry = Math.abs(h) / 2
+        ctx.beginPath()
+        if (shiftKey) {
+          ctx.arc(x, y, rx, 0, Math.PI * 2)
+        } else {
+          ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
+        }
+        ctx.stroke()
+        break
+      default:
+        ctx.closePath()
+        break
+    }
+    // 如果执行过撤回后，再次进行绘画，就将已撤回的历史快照移除
+    if (lastIndex > 0) {
+      store.splice(length - lastIndex, lastIndex)
+    }
+    const img = new Image()
+    img.src = this.canvas.current.toDataURL()
     this.setState({
       coordinate: {
         ...this.state.coordinate,
-        upX: event.clientX,
-        upY: event.clientY
+        upX: clientX,
+        upY: clientY
       },
-      store: [...this.state.store, imgData],
+      store: [...store, img],
+      lastIndex: 0,
       startDrawLine: false
     })
-
-
   }
 
   clearBoard () {
     console.log('清空board')
     const { ctx, width, height } = this.state.canvas
-    console.log(ctx, width, height)
     ctx.clearRect(0, 0, width, height)
   }
 
   undo () {
+    console.log("撤销")
     const { canvas: { ctx }, lastIndex, store } = this.state
     const { length } = store
-    console.log(store)
-    if (length > 0 && lastIndex < length) {
-      console.log("撤销")
-      const imgData = store[length - lastIndex - 1]
-      this.clearBoard()
-      ctx.drawImage(imgData, 0, 0)
+    this.clearBoard()
+    if (length > 0) {
+      const index = length - lastIndex - 2
+      if (index > -2) {
+        const img = store.slice(index, index + 1)
+        if (img.length) {
+          ctx.drawImage(...img, 0, 0)
+        }
+      }
+      this.setState(prevState => {
+        return { lastIndex: Math.min(prevState.lastIndex + 1, length) }
+      })
+    }
+  }
+
+  redo () {
+    console.log("取消撤销")
+    const { canvas: { ctx }, lastIndex, store } = this.state
+    const { length } = store
+    this.clearBoard()
+    if (length > 0) {
+      const index = length - lastIndex
+      if (index <= length) {
+        const img = store.slice(index, index + 1)
+        if (img.length) {
+          ctx.drawImage(...img, 0, 0)
+        }
+      }
+      this.setState(prevState => {
+        return { lastIndex: Math.max(prevState.lastIndex - 1, 0) }
+      })
     }
   }
 
@@ -137,12 +204,16 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor } = this.state
+    const { cursor, lastIndex, store } = this.state
+    const { length } = store
     return (
       <div className="board_container">
         <BoardEraser cursor={cursor}
+                     disableUndo={lastIndex === length}
+                     disableRedo={lastIndex === 0}
                      parent={this}
                      undo={this.undo.bind(this)}
+                     redo={this.redo.bind(this)}
                      clearBoard={this.clearBoard.bind(this)}/>
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
       </div>

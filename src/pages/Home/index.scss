@@ -1,0 +1,15 @@
+.home_page {
+  display: flex;
+  justify-content: flex-start;
+  width: 100vw;
+  height: 100vh;
+
+  .left_nav {
+    flex-basis: 100px;
+    flex-shrink: 0;
+    text-align: center;
+    padding: 20px;
+    background-color: #232323;
+    color: #ddd;
+  }
+}

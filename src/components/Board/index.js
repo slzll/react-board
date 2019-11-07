@@ -24,12 +24,19 @@ class Board extends PureComponent {
     cursor: 'pen',
     styles: {
       color: { rgb: { r: 0, g: 0, b: 0, a: 1 } }
+    },
+    svgElements: {
+      rect: [],
+      circle: [],
+      ellipse: []
     }
   }
 
   constructor (props) {
     super(props)
+    this.boardContainer = React.createRef()
     this.canvas = React.createRef()
+    this.svg = React.createRef()
   }
 
   getContext () {
@@ -42,12 +49,18 @@ class Board extends PureComponent {
   }
 
   resize () {
-    const { clientWidth, clientHeight } = document.documentElement
-    const { current } = this.canvas
-    current.width = clientWidth
-    current.height = clientHeight
-    current.style.width = `${clientWidth}px`
-    current.style.height = `${clientHeight}px`
+    const { clientWidth, clientHeight } = this.boardContainer.current
+    const canvas = this.canvas.current
+    const svg = this.svg.current
+    // 设置canvas的width和height
+    canvas.width = clientWidth
+    canvas.height = clientHeight
+    canvas.style.width = `${clientWidth}px`
+    canvas.style.height = `${clientHeight}px`
+    // 设置svg的width和height
+    svg.setAttribute('width', clientWidth)
+    svg.setAttribute('height', clientHeight)
+    svg.setAttribute('viewBox', `0 0 ${clientWidth} ${clientHeight}`)
     this.setState(prevState => {
       const { ctx } = prevState.canvas
       return { canvas: { ctx, width: clientWidth, height: clientHeight } }
@@ -55,38 +68,89 @@ class Board extends PureComponent {
   }
 
   handleDown (event) {
-    const { ctx } = this.state.canvas
-    const { clientX, clientY } = event
-    this.setState({
+    const { canvas: { ctx }, cursor } = this.state
+    const { offsetX, offsetY } = event
+    let state = {
       coordinate: {
         ...this.state.coordinate,
-        originalX: clientX,
-        originalY: clientY
+        originalX: offsetX,
+        originalY: offsetY
       },
       startDrawLine: true
-    })
+    }
+    switch (cursor) {
+      case "square":
+        state = {
+          ...state,
+          svgElements: {
+            ...this.state.svgElements,
+            rect: [
+              ...this.state.svgElements.rect,
+              { x: offsetX, y: offsetY, width: 0, height: 0, hide: true }
+            ]
+          }
+        }
+        break
+      case 'circle':
+        break
+      default:
+        break
+    }
+
+    this.setState(state)
     ctx.beginPath()
-    ctx.moveTo(clientX, clientY)
+    ctx.moveTo(offsetX, offsetY)
   }
 
   handleMove (e) {
-    const { clientX, clientY, shiftKey } = e
+    const { offsetX, offsetY, shiftKey } = e
     const { coordinate: { originalX, originalY }, canvas: { ctx }, startDrawLine, cursor } = this.state
+    const svg = this.svg.current
     if (startDrawLine) {
       switch (cursor) {
         case 'pen':
           if (shiftKey) {
-            let x = Math.abs(clientX - originalX)
-            let y = Math.abs(clientY - originalY)
-            ctx.lineTo(x >= y ? clientX : originalX, x >= y ? originalY : clientY)
+            let x = Math.abs(offsetX - originalX)
+            let y = Math.abs(offsetY - originalY)
+            ctx.lineTo(x >= y ? offsetX : originalX, x >= y ? originalY : offsetY)
             ctx.stroke()
           } else {
-            ctx.lineTo(clientX, clientY)
+            ctx.lineTo(offsetX, offsetY)
             ctx.stroke()
           }
           break
         case 'eraser':
-          ctx.clearRect(clientX, clientY, 10, 10)
+          ctx.clearRect(offsetX, offsetY, 10, 10)
+          break
+        case 'square':
+          this.setState(prevState => {
+            const { svgElements: { rect } } = prevState
+            const width = offsetX - originalX
+            const height = offsetY - originalY
+            if (shiftKey) {
+              rect[rect.length - 1] = {
+                x: width >= 0 ? originalX : (originalX + width),
+                y: height >= 0 ? originalY : (originalY + width),
+                width: Math.abs(width),
+                height: Math.abs(width),
+                hide: false
+              }
+            } else {
+              rect[rect.length - 1] = {
+                x: width >= 0 ? originalX : (originalX + width),
+                y: height >= 0 ? originalY : (originalY + height),
+                width: Math.abs(width),
+                height: Math.abs(height),
+                hide: false
+              }
+            }
+            return {
+              svgElements: {
+                ...prevState.svgElements,
+                rect
+              }
+            }
+          })
           break
         default:
           break
@@ -95,25 +159,40 @@ class Board extends PureComponent {
   }
 
   handleUp (event) {
-    const { clientX, clientY, shiftKey } = event
+    const { offsetX, offsetY, shiftKey } = event
     const { coordinate: { originalX, originalY }, canvas: { ctx }, lastIndex, store, cursor } = this.state
     const { length } = store
     let w = 0, h = 0
     switch (cursor) {
       case 'square':
-        w = clientX - originalX
-        h = clientY - originalY
+        w = offsetX - originalX
+        h = offsetY - originalY
         ctx.beginPath()
         if (shiftKey) {
           ctx.strokeRect(originalX, originalY, w, w)
         } else {
           ctx.strokeRect(originalX, originalY, w, h)
         }
+        this.setState(prevState => {
+          const { svgElements: { rect } } = prevState
+          const lastRect = rect[rect.length - 1]
+          if (lastRect.width === 0 && lastRect.height === 0) {
+            rect.pop()
+          } else {
+            lastRect.hide = true
+          }
+          return {
+            svgElements: {
+              ...prevState.svgElements,
+              rect
+            }
+          }
+        })
         ctx.stroke()
         break
       case 'circle':
-        w = clientX - originalX
-        h = clientY - originalY
+        w = offsetX - originalX
+        h = offsetY - originalY
         let x = originalX + w / 2
         let y = originalY + h / 2
         let rx = Math.abs(w) / 2
@@ -136,15 +215,17 @@ class Board extends PureComponent {
     }
     const img = new Image()
     img.src = this.canvas.current.toDataURL()
-    this.setState({
-      coordinate: {
-        ...this.state.coordinate,
-        upX: clientX,
-        upY: clientY
-      },
-      store: [...store, img],
-      lastIndex: 0,
-      startDrawLine: false
+    this.setState(prevState => {
+      return {
+        coordinate: {
+          ...prevState.coordinate,
+          upX: offsetX,
+          upY: offsetY
+        },
+        store: [...store, img],
+        lastIndex: 0,
+        startDrawLine: false
+      }
     })
   }
 
@@ -205,13 +286,14 @@ class Board extends PureComponent {
   }
 
   componentDidMount () {
+    const canvas = this.canvas.current
     this.getContext()
     this.resize()
     this.resize = debounce(this.resize)
     window.addEventListener('resize', this.resize.bind(this))
-    this.canvas.current.addEventListener('mousedown', this.handleDown.bind(this))
-    this.canvas.current.addEventListener('mouseup', this.handleUp.bind(this))
-    this.canvas.current.addEventListener('mousemove', this.handleMove.bind(this))
+    canvas.addEventListener('mousedown', this.handleDown.bind(this))
+    canvas.addEventListener('mouseup', this.handleUp.bind(this))
+    canvas.addEventListener('mousemove', this.handleMove.bind(this))
   }
 
   componentWillUnmount () {
@@ -219,10 +301,13 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store, styles: { color } } = this.state
+    const { cursor, lastIndex, store, styles: { color }, svgElements: { rect } } = this.state
     const { length } = store
+    const { rgb: { r, g, b, a } } = color
+    const colorStr = `rgba(${r},${g},${b},${a})`
+
     return (
-      <div className="board_container">
+      <div ref={this.boardContainer} className="board_container">
         <BoardTools cursor={cursor}
                     color={color}
                     disableUndo={lastIndex === length}
@@ -233,6 +318,16 @@ class Board extends PureComponent {
                     redo={this.redo.bind(this)}
                     clearBoard={this.clearBoard.bind(this)}/>
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
+        <svg className="board_container--svg" ref={this.svg} xmlns="http://www.w3.org/2000/svg">
+          {
+            rect.map((item, index) => (
+                <rect className={item.hide ? 'hidden' : ''} key={index} x={item.x} y={item.y} width={item.width}
+                      height={item.height}
+                      fill="transparent" stroke={colorStr}/>
+              )
+            )
+          }
+        </svg>
       </div>
     )
   }

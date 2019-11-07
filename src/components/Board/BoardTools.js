@@ -1,12 +1,19 @@
 import React, { PureComponent } from 'react'
+import { ChromePicker } from 'react-color'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import { faAngleDown, faAngleUp, faRedo, faTrash, faUndo, faEraser, faPen } from "@fortawesome/free-solid-svg-icons"
 import { faSquare, faCircle } from '@fortawesome/free-regular-svg-icons'
 
 
-class BoardEraser extends PureComponent {
+class BoardTools extends PureComponent {
   state = {
-    isShowTools: true
+    isShowTools: true,
+    displayColorPicker: false
+  }
+
+  constructor (props) {
+    super(props)
+    this.colorBtn = React.createRef()
   }
 
   toggleTools () {
@@ -35,9 +42,44 @@ class BoardEraser extends PureComponent {
     this.props.redo()
   }
 
+  toggleColorPicker (e) {
+    e.stopPropagation()
+    this.setState({
+      displayColorPicker: !this.state.displayColorPicker
+    })
+  }
+
+  handleColorChange (color) {
+    this.props.setColor(color)
+  }
+
+  handleDocumentClick (e) {
+    if (this.colorBtn && !this.colorBtn.current.contains(e.target)) {
+      if (this.state.displayColorPicker) {
+        this.toggleColorPicker(e)
+      }
+    }
+  }
+
+  componentDidMount () {
+    document.addEventListener('click', this.handleDocumentClick.bind(this))
+  }
+
+  componentWillUnmount () {
+    document.removeEventListener('click', this.handleDocumentClick.bind(this))
+  }
+
   render () {
-    const { isShowTools } = this.state
-    const { cursor, disableRedo, disableUndo } = this.props
+    const { isShowTools, displayColorPicker } = this.state
+    const { cursor, color, disableRedo, disableUndo } = this.props
+    const { rgb: { r, g, b, a } } = color
+    const colorStyle = {
+      width: '28px',
+      height: '14px',
+      borderRadius: '2px',
+      background: `rgba(${r}, ${g}, ${b}, ${a})`
+    }
+
     return (
       <div className={`board_container--tools ${isShowTools ? '' : 'hidden-tools'}`}>
         <button className={`button is-small ${cursor === 'pen' ? 'is-success' : ''}`}
@@ -54,6 +96,14 @@ class BoardEraser extends PureComponent {
                 onClick={() => this.changeTool('circle')}>
           <span className="icon"> <FontAwesomeIcon icon={faCircle}/> </span>
           <span>圆形</span>
+        </button>
+        <button ref={this.colorBtn} className={`button is-small ${displayColorPicker ? 'show-color-picker' : ''}`}
+                onClick={this.toggleColorPicker.bind(this)}>
+          <span className="icon" style={colorStyle}/>
+          <span>颜色</span>
+          <div className="color_picker--container" onClick={e => e.stopPropagation()}>
+            <ChromePicker color={color.rgb} onChange={this.handleColorChange.bind(this)}/>
+          </div>
         </button>
         <button className={`button is-small ${cursor === 'eraser' ? 'is-success' : ''}`}
                 onClick={() => this.changeTool('eraser')}>
@@ -80,4 +130,4 @@ class BoardEraser extends PureComponent {
   }
 }
 
-export default BoardEraser
+export default BoardTools

@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import debounce from 'lodash/debounce'
-import BoardEraser from "./BoardEraser"
+import BoardTools from "./BoardTools"
 import './index.scss'
 
 class Board extends PureComponent {
@@ -21,7 +21,10 @@ class Board extends PureComponent {
     startDrawLine: false,
     store: [],
     lastIndex: 0,
-    cursor: 'pen'
+    cursor: 'pen',
+    styles: {
+      color: { rgb: { r: 0, g: 0, b: 0, a: 1 } }
+    }
   }
 
   constructor (props) {
@@ -189,6 +192,18 @@ class Board extends PureComponent {
     }
   }
 
+  setColor (color) {
+    const { ctx } = this.state.canvas
+    const { rgb: { r, g, b, a } } = color
+    ctx.strokeStyle = `rgba(${r},${g},${b},${a})`
+    this.setState({
+      styles: {
+        ...this.state.styles,
+        color
+      }
+    })
+  }
+
   componentDidMount () {
     this.getContext()
     this.resize()
@@ -204,17 +219,19 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store } = this.state
+    const { cursor, lastIndex, store, styles: { color } } = this.state
     const { length } = store
     return (
       <div className="board_container">
-        <BoardEraser cursor={cursor}
-                     disableUndo={lastIndex === length}
-                     disableRedo={lastIndex === 0}
-                     parent={this}
-                     undo={this.undo.bind(this)}
-                     redo={this.redo.bind(this)}
-                     clearBoard={this.clearBoard.bind(this)}/>
+        <BoardTools cursor={cursor}
+                    color={color}
+                    disableUndo={lastIndex === length}
+                    disableRedo={lastIndex === 0}
+                    parent={this}
+                    setColor={this.setColor.bind(this)}
+                    undo={this.undo.bind(this)}
+                    redo={this.redo.bind(this)}
+                    clearBoard={this.clearBoard.bind(this)}/>
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
       </div>
     )

@@ -12,10 +12,24 @@ body {
     transform: translateX(-50%);
 
     .button {
+      position: relative;
       transition: all .5s ease;
 
       & + .button {
         margin-left: 10px;
+      }
+
+      .color_picker--container {
+        position: absolute;
+        top: calc(100% + 10px);
+        left: 0;
+        display: none;
+      }
+
+      &.show-color-picker {
+        .color_picker--container {
+          display: block;
+        }
       }
     }
 

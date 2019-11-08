@@ -18,16 +18,39 @@
         margin-left: 10px;
       }
 
-      .color_picker--container {
+      .color_picker--container, .size_picker--container {
         position: absolute;
         top: calc(100% + 10px);
         left: 0;
         display: none;
       }
 
+      .size_picker--container {
+        padding: 20px;
+        transform: scale(0.2);
+        transform-origin: 0 0;
+        box-shadow: 0 0 20px 0 #999;
+        border-radius: 8px;
+        justify-content: flex-start;
+        align-items: flex-end;
+
+        .size-item {
+          flex: 1;
+          &.size-item {
+            margin-left: 10px;
+          }
+        }
+      }
+
       &.show-color-picker {
         .color_picker--container {
           display: block;
+        }
+      }
+
+      &.show-size-picker {
+        .size_picker--container {
+          display: flex;
         }
       }
     }

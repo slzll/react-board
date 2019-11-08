@@ -1,19 +1,31 @@
 import React, { PureComponent } from 'react'
 import { ChromePicker } from 'react-color'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faAngleDown, faAngleUp, faRedo, faTrash, faUndo, faEraser, faPen } from "@fortawesome/free-solid-svg-icons"
+import {
+  faAngleDown,
+  faAngleUp,
+  faRedo,
+  faTrash,
+  faUndo,
+  faEraser,
+  faPen,
+  faRuler,
+  faCircle as faSolidCircle
+} from "@fortawesome/free-solid-svg-icons"
 import { faSquare, faCircle } from '@fortawesome/free-regular-svg-icons'
 
 
 class BoardTools extends PureComponent {
   state = {
     isShowTools: true,
-    displayColorPicker: false
+    displayColorPicker: false,
+    displaySizePicker: false
   }
 
   constructor (props) {
     super(props)
     this.colorBtn = React.createRef()
+    this.sizeBtn = React.createRef()
   }
 
   toggleTools () {
@@ -49,6 +61,13 @@ class BoardTools extends PureComponent {
     })
   }
 
+  toggleSizePicker (e) {
+    e.stopPropagation()
+    this.setState({
+      displaySizePicker: !this.state.displaySizePicker
+    })
+  }
+
   handleColorChange (color) {
     this.props.setColor(color)
   }
@@ -57,6 +76,11 @@ class BoardTools extends PureComponent {
     if (this.colorBtn && !this.colorBtn.current.contains(e.target)) {
       if (this.state.displayColorPicker) {
         this.toggleColorPicker(e)
+      }
+    }
+    if (this.sizeBtn && !this.sizeBtn.current.contains(e.target)) {
+      if (this.state.displaySizePicker) {
+        this.toggleSizePicker(e)
       }
     }
   }
@@ -70,7 +94,7 @@ class BoardTools extends PureComponent {
   }
 
   render () {
-    const { isShowTools, displayColorPicker } = this.state
+    const { isShowTools, displayColorPicker, displaySizePicker } = this.state
     const { cursor, color, disableRedo, disableUndo } = this.props
     const { rgb: { r, g, b, a } } = color
     const colorStyle = {
@@ -79,6 +103,7 @@ class BoardTools extends PureComponent {
       borderRadius: '2px',
       background: `rgba(${r}, ${g}, ${b}, ${a})`
     }
+    const sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     return (
       <div className={`board_container--tools ${isShowTools ? '' : 'hidden-tools'}`}>
@@ -103,6 +128,18 @@ class BoardTools extends PureComponent {
           <span>颜色</span>
           <div className="color_picker--container" onClick={e => e.stopPropagation()}>
             <ChromePicker color={color.rgb} onChange={this.handleColorChange.bind(this)}/>
+          </div>
+        </button>
+        <button ref={this.sizeBtn} className={`button is-small ${displaySizePicker ? 'show-size-picker' : ''}`}
+                onClick={this.toggleSizePicker.bind(this)}>
+          <span className="icon"><FontAwesomeIcon icon={faRuler}/></span>
+          <span>粗细</span>
+          <div className="size_picker--container" onClick={e => e.stopPropagation()}>
+            {
+              sizes.map(item => (
+                <span className="size-item" key={item}><FontAwesomeIcon icon={faSolidCircle} size={`${item}x`}/></span>
+              ))
+            }
           </div>
         </button>
         <button className={`button is-small ${cursor === 'eraser' ? 'is-success' : ''}`}

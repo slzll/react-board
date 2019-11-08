@@ -5,19 +5,8 @@ import './index.scss'
 
 class Board extends PureComponent {
   state = {
-    coordinate: {
-      originalX: 0,
-      originalY: 0,
-      upX: 0,
-      upY: 0,
-      x: 0,
-      y: 0
-    },
-    canvas: {
-      ctx: null,
-      width: 0,
-      height: 0
-    },
+    coordinate: { originalX: 0, originalY: 0, upX: 0, upY: 0, x: 0, y: 0 },
+    canvas: { ctx: null, width: 0, height: 0 },
     startDrawLine: false,
     store: [],
     lastIndex: 0,
@@ -25,11 +14,7 @@ class Board extends PureComponent {
     styles: {
       color: { rgb: { r: 0, g: 0, b: 0, a: 1 } }
     },
-    svgElements: {
-      rect: [],
-      circle: [],
-      ellipse: []
-    }
+    svgElements: { rect: [], ellipse: [] }
   }
 
   constructor (props) {
@@ -71,11 +56,7 @@ class Board extends PureComponent {
     const { canvas: { ctx }, cursor } = this.state
     const { offsetX, offsetY } = event
     let state = {
-      coordinate: {
-        ...this.state.coordinate,
-        originalX: offsetX,
-        originalY: offsetY
-      },
+      coordinate: { ...this.state.coordinate, originalX: offsetX, originalY: offsetY },
       startDrawLine: true
     }
     switch (cursor) {
@@ -92,6 +73,16 @@ class Board extends PureComponent {
         }
         break
       case 'circle':
+        state = {
+          ...state,
+          svgElements: {
+            ...this.state.svgElements,
+            ellipse: [
+              ...this.state.svgElements.ellipse,
+              { x: offsetX, y: offsetY, rx: 0, ry: 0, hide: true }
+            ]
+          }
+        }
         break
       default:
         break
@@ -105,7 +96,6 @@ class Board extends PureComponent {
   handleMove (e) {
     const { offsetX, offsetY, shiftKey } = e
     const { coordinate: { originalX, originalY }, canvas: { ctx }, startDrawLine, cursor } = this.state
-    const svg = this.svg.current
     if (startDrawLine) {
       switch (cursor) {
         case 'pen':
@@ -149,6 +139,25 @@ class Board extends PureComponent {
                 ...prevState.svgElements,
                 rect
               }
+            }
+          })
+          break
+        case 'circle':
+          this.setState(prevState => {
+            const { svgElements: { ellipse } } = prevState
+            const w = offsetX - originalX
+            const h = offsetY - originalY
+            let x = originalX + w / 2
+            let y = originalY + h / 2
+            let rx = Math.abs(w) / 2
+            let ry = Math.abs(h) / 2
+            if (shiftKey) {
+              ellipse[ellipse.length - 1] = { x, y, rx, ry: rx, hide: false }
+            } else {
+              ellipse[ellipse.length - 1] = { x, y, rx, ry, hide: false }
+            }
+            return {
+              svgElements: { ...prevState.svgElements, ellipse }
             }
           })
           break
@@ -203,6 +212,18 @@ class Board extends PureComponent {
         } else {
           ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2)
         }
+        this.setState(prevState => {
+          const { svgElements: { ellipse } } = prevState
+          const lastCircle = ellipse[ellipse.length - 1]
+          if (lastCircle.rx === 0 && lastCircle.ry === 0) {
+            ellipse.pop()
+          } else {
+            lastCircle.hide = true
+          }
+          return {
+            svgElements: { ...prevState.svgElements, ellipse }
+          }
+        })
         ctx.stroke()
         break
       default:
@@ -217,11 +238,7 @@ class Board extends PureComponent {
     img.src = this.canvas.current.toDataURL()
     this.setState(prevState => {
       return {
-        coordinate: {
-          ...prevState.coordinate,
-          upX: offsetX,
-          upY: offsetY
-        },
+        coordinate: { ...prevState.coordinate, upX: offsetX, upY: offsetY },
         store: [...store, img],
         lastIndex: 0,
         startDrawLine: false
@@ -278,10 +295,7 @@ class Board extends PureComponent {
     const { rgb: { r, g, b, a } } = color
     ctx.strokeStyle = `rgba(${r},${g},${b},${a})`
     this.setState({
-      styles: {
-        ...this.state.styles,
-        color
-      }
+      styles: { ...this.state.styles, color }
     })
   }
 
@@ -301,7 +315,7 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store, styles: { color }, svgElements: { rect } } = this.state
+    const { cursor, lastIndex, store, styles: { color }, svgElements: { rect, ellipse } } = this.state
     const { length } = store
     const { rgb: { r, g, b, a } } = color
     const colorStr = `rgba(${r},${g},${b},${a})`
@@ -322,8 +336,14 @@ class Board extends PureComponent {
           {
             rect.map((item, index) => (
                 <rect className={item.hide ? 'hidden' : ''} key={index} x={item.x} y={item.y} width={item.width}
-                      height={item.height}
-                      fill="transparent" stroke={colorStr}/>
+                      height={item.height} fill="transparent" stroke={colorStr}/>
+              )
+            )
+          }
+          {
+            ellipse.map((item, index) => (
+                <ellipse className={item.hide ? 'hidden' : ''} key={index} cx={item.x} cy={item.y} rx={item.rx}
+                         ry={item.ry} fill="transparent" stroke={colorStr}/>
               )
             )
           }

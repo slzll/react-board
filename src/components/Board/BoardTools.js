@@ -72,6 +72,10 @@ class BoardTools extends PureComponent {
     this.props.setColor(color)
   }
 
+  handleSizeChange (item) {
+    this.props.setSize(item)
+  }
+
   handleDocumentClick (e) {
     if (this.colorBtn && !this.colorBtn.current.contains(e.target)) {
       if (this.state.displayColorPicker) {
@@ -137,7 +141,9 @@ class BoardTools extends PureComponent {
           <div className="size_picker--container" onClick={e => e.stopPropagation()}>
             {
               sizes.map(item => (
-                <span className="size-item" key={item}><FontAwesomeIcon icon={faSolidCircle} size={`${item}x`}/></span>
+                <span className="size-item" key={item} onClick={this.handleSizeChange.bind(this, item)}>
+                  <FontAwesomeIcon icon={faSolidCircle} size={`${item}x`}/>
+                </span>
               ))
             }
           </div>

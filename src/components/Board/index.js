@@ -12,7 +12,8 @@ class Board extends PureComponent {
     lastIndex: 0,
     cursor: 'pen',
     styles: {
-      color: { rgb: { r: 0, g: 0, b: 0, a: 1 } }
+      color: { rgb: { r: 0, g: 0, b: 0, a: 1 } },
+      lineWidth: 1
     },
     svgElements: { rect: [], ellipse: [] }
   }
@@ -299,6 +300,16 @@ class Board extends PureComponent {
     })
   }
 
+  setSize (lineWidth) {
+    const { ctx } = this.state.canvas
+    console.log(lineWidth)
+    ctx.lineWidth = lineWidth
+    ctx.strokeWidth = lineWidth
+    this.setState({
+      styles: { ...this.state.styles, lineWidth }
+    })
+  }
+
   componentDidMount () {
     const canvas = this.canvas.current
     this.getContext()
@@ -328,6 +339,7 @@ class Board extends PureComponent {
                     disableRedo={lastIndex === 0}
                     parent={this}
                     setColor={this.setColor.bind(this)}
+                    setSize={this.setSize.bind(this)}
                     undo={this.undo.bind(this)}
                     redo={this.redo.bind(this)}
                     clearBoard={this.clearBoard.bind(this)}/>

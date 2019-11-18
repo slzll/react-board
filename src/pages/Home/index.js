@@ -7,7 +7,9 @@ class Home extends Component {
     return (
       <main className="home_page">
         <div className="left_nav">
-          首页
+          <a href="/" target="_blank">
+            首页
+          </a>
         </div>
         <Board/>
       </main>

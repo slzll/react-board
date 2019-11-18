@@ -1,7 +1,12 @@
 const path = require('path')
 
+const isDev = process.env.NODE_ENV === 'development'
+
+process.env.PUBLIC_URL = isDev ? '' : '/board'
+
 module.exports = {
   webpack: function (config, env) {
+    config.output.publicPath = isDev ? '' : '/board'
     config.resolve = {
       alias: {
         '@': path.resolve(__dirname, 'src'),

@@ -9,6 +9,8 @@
     left: 50%;
     z-index: 1000;
     transform: translateX(-50%);
+    display: flex;
+    justify-content: flex-start;
 
     .button {
       position: relative;
@@ -36,6 +38,7 @@
 
         .size-item {
           flex: 1;
+
           &.size-item {
             margin-left: 10px;
           }

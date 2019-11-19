@@ -13,7 +13,7 @@ class Board extends PureComponent {
     cursor: 'pen',
     styles: {
       color: { rgb: { r: 0, g: 0, b: 0, a: 1 } },
-      lineWidth: 1
+      strokeWidth: 1
     },
     svgElements: { rect: [], ellipse: [] }
   }
@@ -300,14 +300,22 @@ class Board extends PureComponent {
     })
   }
 
-  setSize (lineWidth) {
+  setSize (strokeWidth) {
     const { ctx } = this.state.canvas
-    console.log(lineWidth)
-    ctx.lineWidth = lineWidth
-    ctx.strokeWidth = lineWidth
+    ctx.lineWidth = strokeWidth
+    ctx.strokeWidth = strokeWidth
     this.setState({
-      styles: { ...this.state.styles, lineWidth }
+      styles: { ...this.state.styles, strokeWidth }
     })
+  }
+
+  exportFile () {
+    const canvas = this.canvas.current
+    const url = canvas.toDataURL()
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${+new Date()}.png`
+    link.click()
   }
 
   componentDidMount () {
@@ -326,7 +334,7 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store, styles: { color }, svgElements: { rect, ellipse } } = this.state
+    const { cursor, lastIndex, store, styles: { color, strokeWidth }, svgElements: { rect, ellipse } } = this.state
     const { length } = store
     const { rgb: { r, g, b, a } } = color
     const colorStr = `rgba(${r},${g},${b},${a})`
@@ -342,20 +350,22 @@ class Board extends PureComponent {
                     setSize={this.setSize.bind(this)}
                     undo={this.undo.bind(this)}
                     redo={this.redo.bind(this)}
-                    clearBoard={this.clearBoard.bind(this)}/>
+                    clearBoard={this.clearBoard.bind(this)}
+                    exportFile={this.exportFile.bind(this)}
+        />
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
         <svg className="board_container--svg" ref={this.svg} xmlns="http://www.w3.org/2000/svg">
           {
             rect.map((item, index) => (
                 <rect className={item.hide ? 'hidden' : ''} key={index} x={item.x} y={item.y} width={item.width}
-                      height={item.height} fill="transparent" stroke={colorStr}/>
+                      height={item.height} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
               )
             )
           }
           {
             ellipse.map((item, index) => (
                 <ellipse className={item.hide ? 'hidden' : ''} key={index} cx={item.x} cy={item.y} rx={item.rx}
-                         ry={item.ry} fill="transparent" stroke={colorStr}/>
+                         ry={item.ry} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
               )
             )
           }

@@ -10,7 +10,8 @@ import {
   faEraser,
   faPen,
   faRuler,
-  faCircle as faSolidCircle
+  faCircle as faSolidCircle,
+  faFileExport
 } from "@fortawesome/free-solid-svg-icons"
 import { faSquare, faCircle } from '@fortawesome/free-regular-svg-icons'
 
@@ -37,6 +38,10 @@ class BoardTools extends PureComponent {
 
   clearBoard () {
     this.props.clearBoard()
+  }
+
+  exportFile () {
+    this.props.exportFile()
   }
 
   changeTool (cursor) {
@@ -164,6 +169,10 @@ class BoardTools extends PureComponent {
         <button className="button is-small" onClick={() => this.clearBoard()}>
           <span className="icon"><FontAwesomeIcon icon={faTrash}/></span>
           <span>清空</span>
+        </button>
+        <button className="button is-small" onClick={() => this.exportFile()}>
+          <span className="icon"><FontAwesomeIcon icon={faFileExport}/></span>
+          <span>导出</span>
         </button>
         <button className="button is-small tools-control-btn" onClick={() => this.toggleTools()}>
           <span className="icon"><FontAwesomeIcon icon={isShowTools ? faAngleUp : faAngleDown}/></span>

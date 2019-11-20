@@ -380,13 +380,13 @@ class Board extends PureComponent {
         />
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
         <svg className="board_container--svg" ref={this.svg} xmlns="http://www.w3.org/2000/svg">
-          <rect className={rect.hide ? 'hidden' : ''} x={rect.x} y={rect.y} width={rect.width}
-                height={rect.height} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}
-                strokeLinejoin={lineJoin} strokeLinecap={lineCap}/>
-          <ellipse className={ellipse.hide ? 'hidden' : ''} cx={ellipse.x} cy={ellipse.y} rx={ellipse.rx}
-                   ry={ellipse.ry} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
-          <path className={path.hide ? 'hidden' : ''} d={path.d} fill="transparent" stroke={colorStr}
-                strokeWidth={strokeWidth} strokeLinejoin={lineJoin} strokeLinecap={lineCap}/>
+          <g fill="transparent" stroke={colorStr} strokeWidth={strokeWidth} strokeLinejoin={lineJoin}
+             strokeLinecap={lineCap}>
+            <rect className={rect.hide ? 'hidden' : ''} x={rect.x} y={rect.y} width={rect.width} height={rect.height}/>
+            <ellipse className={ellipse.hide ? 'hidden' : ''} cx={ellipse.x} cy={ellipse.y} rx={ellipse.rx}
+                     ry={ellipse.ry}/>
+            <path className={path.hide ? 'hidden' : ''} d={path.d}/>
+          </g>
         </svg>
       </div>
     )

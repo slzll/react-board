@@ -13,9 +13,11 @@ class Board extends PureComponent {
     cursor: 'pen',
     styles: {
       color: { rgb: { r: 0, g: 0, b: 0, a: 1 } },
-      strokeWidth: 1
+      strokeWidth: 1,
+      lineCap: 'round',
+      lineJoin: 'round'
     },
-    svgElements: { rect: [], ellipse: [] }
+    svgElements: { rect: {}, ellipse: {} }
   }
 
   constructor (props) {
@@ -54,7 +56,7 @@ class Board extends PureComponent {
   }
 
   handleDown (event) {
-    const { canvas: { ctx }, cursor } = this.state
+    const { canvas: { ctx }, cursor, styles: { lineCap, lineJoin } } = this.state
     const { offsetX, offsetY } = event
     let state = {
       coordinate: { ...this.state.coordinate, originalX: offsetX, originalY: offsetY },
@@ -66,10 +68,7 @@ class Board extends PureComponent {
           ...state,
           svgElements: {
             ...this.state.svgElements,
-            rect: [
-              ...this.state.svgElements.rect,
-              { x: offsetX, y: offsetY, width: 0, height: 0, hide: true }
-            ]
+            rect: { x: offsetX, y: offsetY, width: 0, height: 0, hide: true }
           }
         }
         break
@@ -78,10 +77,7 @@ class Board extends PureComponent {
           ...state,
           svgElements: {
             ...this.state.svgElements,
-            ellipse: [
-              ...this.state.svgElements.ellipse,
-              { x: offsetX, y: offsetY, rx: 0, ry: 0, hide: true }
-            ]
+            ellipse: { x: offsetX, y: offsetY, rx: 0, ry: 0, hide: true }
           }
         }
         break
@@ -90,6 +86,8 @@ class Board extends PureComponent {
     }
 
     this.setState(state)
+    ctx.lineCap = lineCap
+    ctx.lineJoin = lineJoin
     ctx.beginPath()
     ctx.moveTo(offsetX, offsetY)
   }
@@ -115,11 +113,11 @@ class Board extends PureComponent {
           break
         case 'square':
           this.setState(prevState => {
-            const { svgElements: { rect } } = prevState
+            let rect = prevState.svgElements.rect
             const width = offsetX - originalX
             const height = offsetY - originalY
             if (shiftKey) {
-              rect[rect.length - 1] = {
+              rect = {
                 x: width >= 0 ? originalX : (originalX + width),
                 y: height >= 0 ? originalY : (originalY + width),
                 width: Math.abs(width),
@@ -127,7 +125,7 @@ class Board extends PureComponent {
                 hide: false
               }
             } else {
-              rect[rect.length - 1] = {
+              rect = {
                 x: width >= 0 ? originalX : (originalX + width),
                 y: height >= 0 ? originalY : (originalY + height),
                 width: Math.abs(width),
@@ -136,16 +134,13 @@ class Board extends PureComponent {
               }
             }
             return {
-              svgElements: {
-                ...prevState.svgElements,
-                rect
-              }
+              svgElements: { ...prevState.svgElements, rect }
             }
           })
           break
         case 'circle':
           this.setState(prevState => {
-            const { svgElements: { ellipse } } = prevState
+            let ellipse = prevState.svgElements.ellipse
             const w = offsetX - originalX
             const h = offsetY - originalY
             let x = originalX + w / 2
@@ -153,9 +148,9 @@ class Board extends PureComponent {
             let rx = Math.abs(w) / 2
             let ry = Math.abs(h) / 2
             if (shiftKey) {
-              ellipse[ellipse.length - 1] = { x, y, rx, ry: rx, hide: false }
+              ellipse = { x, y, rx, ry: rx, hide: false }
             } else {
-              ellipse[ellipse.length - 1] = { x, y, rx, ry, hide: false }
+              ellipse = { x, y, rx, ry, hide: false }
             }
             return {
               svgElements: { ...prevState.svgElements, ellipse }
@@ -185,17 +180,9 @@ class Board extends PureComponent {
         }
         this.setState(prevState => {
           const { svgElements: { rect } } = prevState
-          const lastRect = rect[rect.length - 1]
-          if (lastRect.width === 0 && lastRect.height === 0) {
-            rect.pop()
-          } else {
-            lastRect.hide = true
-          }
+          rect.hide = true
           return {
-            svgElements: {
-              ...prevState.svgElements,
-              rect
-            }
+            svgElements: { ...prevState.svgElements, rect }
           }
         })
         ctx.stroke()
@@ -215,12 +202,7 @@ class Board extends PureComponent {
         }
         this.setState(prevState => {
           const { svgElements: { ellipse } } = prevState
-          const lastCircle = ellipse[ellipse.length - 1]
-          if (lastCircle.rx === 0 && lastCircle.ry === 0) {
-            ellipse.pop()
-          } else {
-            lastCircle.hide = true
-          }
+          ellipse.hide = true
           return {
             svgElements: { ...prevState.svgElements, ellipse }
           }
@@ -302,8 +284,8 @@ class Board extends PureComponent {
 
   setSize (strokeWidth) {
     const { ctx } = this.state.canvas
-    ctx.lineWidth = strokeWidth
     ctx.strokeWidth = strokeWidth
+    ctx.lineWidth = strokeWidth
     this.setState({
       styles: { ...this.state.styles, strokeWidth }
     })
@@ -316,6 +298,16 @@ class Board extends PureComponent {
     link.href = url
     link.download = `${+new Date()}.png`
     link.click()
+  }
+
+  setGridBg (type) {
+    const canvas = this.canvas.current
+    console.log(canvas)
+    if (type === 'transparent') {
+      canvas.style.backgroundImage = ''
+    } else if (type === 'grid') {
+      canvas.style.backgroundImage = 'url("data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cdefs%3E%3Cpattern%20id%3D%22smallGrid%22%20width%3D%2210%22%20height%3D%2210%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Cpath%20d%3D%22M%2010%200%20L%200%200%200%2010%22%20fill%3D%22none%22%20stroke%3D%22gray%22%20stroke-width%3D%220.5%22%3E%3C%2Fpath%3E%3C%2Fpattern%3E%3Cpattern%20id%3D%22grid%22%20width%3D%22100%22%20height%3D%22100%22%20patternUnits%3D%22userSpaceOnUse%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20fill%3D%22url(%23smallGrid)%22%3E%3C%2Frect%3E%3Cpath%20d%3D%22M%20100%200%20L%200%200%200%20100%22%20fill%3D%22none%22%20stroke%3D%22gray%22%20stroke-width%3D%221%22%3E%3C%2Fpath%3E%3C%2Fpattern%3E%3C%2Fdefs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20fill%3D%22url(%23grid)%22%3E%3C%2Frect%3E%3C%2Fsvg%3E")'
+    }
   }
 
   componentDidMount () {
@@ -334,7 +326,7 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store, styles: { color, strokeWidth }, svgElements: { rect, ellipse } } = this.state
+    const { cursor, lastIndex, store, styles: { color, strokeWidth, lineCap, lineJoin }, svgElements: { rect, ellipse } } = this.state
     const { length } = store
     const { rgb: { r, g, b, a } } = color
     const colorStr = `rgba(${r},${g},${b},${a})`
@@ -351,24 +343,16 @@ class Board extends PureComponent {
                     undo={this.undo.bind(this)}
                     redo={this.redo.bind(this)}
                     clearBoard={this.clearBoard.bind(this)}
+                    setGridBg={this.setGridBg.bind(this)}
                     exportFile={this.exportFile.bind(this)}
         />
         <canvas className={`board_container--canvas cursor-${cursor}`} ref={this.canvas}/>
         <svg className="board_container--svg" ref={this.svg} xmlns="http://www.w3.org/2000/svg">
-          {
-            rect.map((item, index) => (
-                <rect className={item.hide ? 'hidden' : ''} key={index} x={item.x} y={item.y} width={item.width}
-                      height={item.height} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
-              )
-            )
-          }
-          {
-            ellipse.map((item, index) => (
-                <ellipse className={item.hide ? 'hidden' : ''} key={index} cx={item.x} cy={item.y} rx={item.rx}
-                         ry={item.ry} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
-              )
-            )
-          }
+          <rect className={rect.hide ? 'hidden' : ''} x={rect.x} y={rect.y} width={rect.width}
+                height={rect.height} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}
+                strokeLinejoin={lineJoin} strokeLinecap={lineCap}/>
+          <ellipse className={ellipse.hide ? 'hidden' : ''} cx={ellipse.x} cy={ellipse.y} rx={ellipse.rx}
+                   ry={ellipse.ry} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
         </svg>
       </div>
     )

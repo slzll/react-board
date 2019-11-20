@@ -10,17 +10,19 @@ import {
   faEraser,
   faPen,
   faRuler,
-  faCircle as faSolidCircle,
-  faFileExport
+  faFileExport,
+  faBorderAll
 } from "@fortawesome/free-solid-svg-icons"
 import { faSquare, faCircle } from '@fortawesome/free-regular-svg-icons'
+import { Slider } from '@material-ui/core'
 
 
 class BoardTools extends PureComponent {
   state = {
     isShowTools: true,
     displayColorPicker: false,
-    displaySizePicker: false
+    displaySizePicker: false,
+    isGridBg: false
   }
 
   constructor (props) {
@@ -34,6 +36,14 @@ class BoardTools extends PureComponent {
     this.setState({
       isShowTools: !isShowTools
     })
+  }
+
+  setGridBg () {
+    const { isGridBg } = this.state
+    this.setState({
+      isGridBg: !isGridBg
+    })
+    this.props.setGridBg(!isGridBg?'grid':'transparent')
   }
 
   clearBoard () {
@@ -77,8 +87,8 @@ class BoardTools extends PureComponent {
     this.props.setColor(color)
   }
 
-  handleSizeChange (item) {
-    this.props.setSize(item)
+  handleSizeChange (e, size) {
+    this.props.setSize(size)
   }
 
   handleDocumentClick (e) {
@@ -103,7 +113,7 @@ class BoardTools extends PureComponent {
   }
 
   render () {
-    const { isShowTools, displayColorPicker, displaySizePicker } = this.state
+    const { isShowTools, displayColorPicker, displaySizePicker, isGridBg } = this.state
     const { cursor, color, disableRedo, disableUndo } = this.props
     const { rgb: { r, g, b, a } } = color
     const colorStyle = {
@@ -112,7 +122,6 @@ class BoardTools extends PureComponent {
       borderRadius: '2px',
       background: `rgba(${r}, ${g}, ${b}, ${a})`
     }
-    const sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
     return (
       <div className={`board_container--tools ${isShowTools ? '' : 'hidden-tools'}`}>
@@ -144,13 +153,9 @@ class BoardTools extends PureComponent {
           <span className="icon"><FontAwesomeIcon icon={faRuler}/></span>
           <span>粗细</span>
           <div className="size_picker--container" onClick={e => e.stopPropagation()}>
-            {
-              sizes.map(item => (
-                <span className="size-item" key={item} onClick={this.handleSizeChange.bind(this, item)}>
-                  <FontAwesomeIcon icon={faSolidCircle} size={`${item}x`}/>
-                </span>
-              ))
-            }
+            <Slider defaultValue={1} step={1} min={1} max={100} onChange={this.handleSizeChange.bind(this)}
+                    aria-labelledby="continuous-slider"
+                    valueLabelDisplay="auto"/>
           </div>
         </button>
         <button className={`button is-small ${cursor === 'eraser' ? 'is-success' : ''}`}
@@ -165,6 +170,10 @@ class BoardTools extends PureComponent {
         <button className="button is-small" onClick={() => this.redo()} disabled={disableRedo}>
           <span className="icon"><FontAwesomeIcon icon={faRedo}/></span>
           <span>取消撤销</span>
+        </button>
+        <button className="button is-small" onClick={() => this.setGridBg()}>
+          <span className="icon"><FontAwesomeIcon icon={faBorderAll}/></span>
+          <span>{isGridBg ? '透明背景' : '格子背景'}</span>
         </button>
         <button className="button is-small" onClick={() => this.clearBoard()}>
           <span className="icon"><FontAwesomeIcon icon={faTrash}/></span>

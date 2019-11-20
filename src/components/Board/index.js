@@ -104,26 +104,13 @@ class Board extends PureComponent {
         case 'pen':
           let x = Math.abs(offsetX - originalX)
           let y = Math.abs(offsetY - originalY)
-          // if (shiftKey) {
-          //   let x = Math.abs(offsetX - originalX)
-          //   let y = Math.abs(offsetY - originalY)
-          //   ctx.lineTo(x >= y ? offsetX : originalX, x >= y ? originalY : offsetY)
-          //   ctx.stroke()
-          // } else {
-          //   ctx.lineTo(offsetX, offsetY)
-          //   ctx.stroke()
-          // }
           this.setState(prevState => {
             let { svgElements: { path: { d, list } } } = prevState
             const { length } = list
+            const last = list[length - 1]
             if (shiftKey) {
-              d = `M ${originalX} ${originalY} ${x >= y ? 'H ' + offsetX : ('V ' + offsetY)}`
-              if (length > 1) {
-                list[length - 1].x = x >= y ? offsetX : originalX
-                list[length - 1].y = x >= y ? originalY : offsetY
-              } else {
-                list.push({ x: x >= y ? offsetX : originalX, y: x >= y ? originalY : offsetY })
-              }
+              d = `${d} ${x >= y ? 'H ' + offsetX : ('V ' + offsetY)}`
+              list.push({ x: x >= y ? offsetX : last.x, y: x >= y ? last.y : offsetY })
             } else {
               d = `${d} L ${offsetX} ${offsetY}`
               list.push({ x: offsetX, y: offsetY })

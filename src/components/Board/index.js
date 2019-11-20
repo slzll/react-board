@@ -17,7 +17,7 @@ class Board extends PureComponent {
       lineCap: 'round',
       lineJoin: 'round'
     },
-    svgElements: { rect: {}, ellipse: {} }
+    svgElements: { rect: {}, ellipse: {}, path: {} }
   }
 
   constructor (props) {
@@ -62,14 +62,23 @@ class Board extends PureComponent {
       coordinate: { ...this.state.coordinate, originalX: offsetX, originalY: offsetY },
       startDrawLine: true
     }
+    ctx.lineCap = lineCap
+    ctx.lineJoin = lineJoin
+
     switch (cursor) {
-      case "square":
+      case "pen":
         state = {
           ...state,
           svgElements: {
             ...this.state.svgElements,
-            rect: { x: offsetX, y: offsetY, width: 0, height: 0, hide: true }
+            path: { d: `M ${offsetX} ${offsetY}`, list: [{ x: offsetX, y: offsetY }], hide: true }
           }
+        }
+        break
+      case "square":
+        state = {
+          ...state,
+          svgElements: { ...this.state.svgElements, rect: { x: offsetX, y: offsetY, width: 0, height: 0, hide: true } }
         }
         break
       case 'circle':
@@ -84,12 +93,7 @@ class Board extends PureComponent {
       default:
         break
     }
-
     this.setState(state)
-    ctx.lineCap = lineCap
-    ctx.lineJoin = lineJoin
-    ctx.beginPath()
-    ctx.moveTo(offsetX, offsetY)
   }
 
   handleMove (e) {
@@ -98,15 +102,38 @@ class Board extends PureComponent {
     if (startDrawLine) {
       switch (cursor) {
         case 'pen':
-          if (shiftKey) {
-            let x = Math.abs(offsetX - originalX)
-            let y = Math.abs(offsetY - originalY)
-            ctx.lineTo(x >= y ? offsetX : originalX, x >= y ? originalY : offsetY)
-            ctx.stroke()
-          } else {
-            ctx.lineTo(offsetX, offsetY)
-            ctx.stroke()
-          }
+          let x = Math.abs(offsetX - originalX)
+          let y = Math.abs(offsetY - originalY)
+          // if (shiftKey) {
+          //   let x = Math.abs(offsetX - originalX)
+          //   let y = Math.abs(offsetY - originalY)
+          //   ctx.lineTo(x >= y ? offsetX : originalX, x >= y ? originalY : offsetY)
+          //   ctx.stroke()
+          // } else {
+          //   ctx.lineTo(offsetX, offsetY)
+          //   ctx.stroke()
+          // }
+          this.setState(prevState => {
+            let { svgElements: { path: { d, list } } } = prevState
+            const { length } = list
+            if (shiftKey) {
+              d = `M ${originalX} ${originalY} ${x >= y ? 'H ' + offsetX : ('V ' + offsetY)}`
+              if (length > 1) {
+                list[length - 1].x = x >= y ? offsetX : originalX
+                list[length - 1].y = x >= y ? originalY : offsetY
+              } else {
+                list.push({ x: x >= y ? offsetX : originalX, y: x >= y ? originalY : offsetY })
+              }
+            } else {
+              d = `${d} L ${offsetX} ${offsetY}`
+              list.push({ x: offsetX, y: offsetY })
+            }
+            return {
+              ...prevState, svgElements: {
+                ...prevState.svgElements, path: { d, list, hide: false }
+              }
+            }
+          })
           break
         case 'eraser':
           ctx.clearRect(offsetX, offsetY, 10, 10)
@@ -169,6 +196,24 @@ class Board extends PureComponent {
     const { length } = store
     let w = 0, h = 0
     switch (cursor) {
+      case "pen":
+        const { svgElements: { path: { list } } } = this.state
+        ctx.beginPath()
+        list.forEach(({ x, y }, index) => {
+          console.log(x, y, index)
+          if (index === 0) {
+            ctx.moveTo(x, y)
+          } else {
+            ctx.lineTo(x, y)
+          }
+        })
+        ctx.stroke()
+        this.setState(prevState => {
+          const { svgElements: { path } } = prevState
+          path.hide = true
+          return { svgElements: { ...prevState.svgElements, path } }
+        })
+        break
       case 'square':
         w = offsetX - originalX
         h = offsetY - originalY
@@ -210,7 +255,6 @@ class Board extends PureComponent {
         ctx.stroke()
         break
       default:
-        ctx.closePath()
         break
     }
     // 如果执行过撤回后，再次进行绘画，就将已撤回的历史快照移除
@@ -227,6 +271,7 @@ class Board extends PureComponent {
         startDrawLine: false
       }
     })
+    ctx.save()
   }
 
   clearBoard () {
@@ -326,7 +371,7 @@ class Board extends PureComponent {
   }
 
   render () {
-    const { cursor, lastIndex, store, styles: { color, strokeWidth, lineCap, lineJoin }, svgElements: { rect, ellipse } } = this.state
+    const { cursor, lastIndex, store, styles: { color, strokeWidth, lineCap, lineJoin }, svgElements: { rect, ellipse, path } } = this.state
     const { length } = store
     const { rgb: { r, g, b, a } } = color
     const colorStr = `rgba(${r},${g},${b},${a})`
@@ -353,6 +398,8 @@ class Board extends PureComponent {
                 strokeLinejoin={lineJoin} strokeLinecap={lineCap}/>
           <ellipse className={ellipse.hide ? 'hidden' : ''} cx={ellipse.x} cy={ellipse.y} rx={ellipse.rx}
                    ry={ellipse.ry} fill="transparent" stroke={colorStr} strokeWidth={strokeWidth}/>
+          <path className={path.hide ? 'hidden' : ''} d={path.d} fill="transparent" stroke={colorStr}
+                strokeWidth={strokeWidth} strokeLinejoin={lineJoin} strokeLinecap={lineCap}/>
         </svg>
       </div>
     )
